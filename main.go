@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -25,10 +27,14 @@ func construct(orders ...int) error {
 			switch dirs1[0] {
 			case "":
 				dirs1 = dirs1[1:]
-				dirs2 = []string{""}
+				if orders[0] == 1 {
+					dirs2 = []string{""}
+				}
 			case ".":
 				dirs1 = dirs1[1:]
-				dirs2 = []string{"."}
+				if orders[0] == 1 {
+					dirs2 = []string{"."}
+				}
 			}
 			for _, order := range orders {
 				order -= 1 // handle 1 origin
@@ -51,14 +57,33 @@ func run() error {
 	var orders []int
 	flag.Parse()
 	for _, arg := range flag.Args() {
-		order, err := strconv.Atoi(arg)
-		if err != nil {
-			continue
+		log.Println(arg)
+		switch {
+		case regexp.MustCompile(`^\d+\.\.-?\d+$`).MatchString(arg):
+			ranges := strings.Split(arg, "..")
+			start, err := strconv.Atoi(ranges[0])
+			if err != nil {
+				return err
+			}
+			end, err := strconv.Atoi(ranges[1])
+			if err != nil {
+				return err
+			}
+			for order := start; order <= end; order++ {
+				orders = append(orders, order)
+			}
+		case regexp.MustCompile(`^\d+$`).MatchString(arg):
+			order, err := strconv.Atoi(arg)
+			if err != nil {
+				continue
+			}
+			if order == 0 {
+				return errors.New("Cannot use 0 as index because of 1 origin")
+			}
+			orders = append(orders, order)
+		default:
+			return errors.New("error")
 		}
-		if order == 0 {
-			return errors.New("Cannot use 0 as index because of 1 origin")
-		}
-		orders = append(orders, order)
 	}
 	if err := construct(orders...); err != nil {
 		return err
