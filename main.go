@@ -16,56 +16,55 @@ func construct(orders ...int) error {
 	var r io.Reader = os.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
+		var indexes []int
 		input := scanner.Text()
 		switch len(orders) {
 		case 0:
 			fmt.Fprintf(os.Stdout, "%s\n", input)
-		default:
-			var dirs1 []string = strings.Split(input, "/")
-			var dirs2 []string
-			switch dirs1[0] {
-			case "":
-				dirs1 = dirs1[1:]
-				if orders[0] == 1 {
-					dirs2 = []string{""}
-				}
-			case ".":
-				dirs1 = dirs1[1:]
-				if orders[0] == 1 {
-					dirs2 = []string{"."}
-				}
-			}
-			switch lastOrder := orders[len(orders)-1]; {
-			case lastOrder < 0:
-				var newOrders []int
-				start := orders[0]
-				end := len(dirs1) + orders[len(orders)-1]
-				if end < start {
-					return fmt.Errorf("Index last %d (%d) is smaller than index start %d", orders[len(orders)-1], end, start)
-				}
-				for i := start; i <= end; i++ {
-					newOrders = append(newOrders, i)
-				}
-				orders = newOrders
-			case lastOrder == 0:
-				var newOrders []int
-				start := orders[0]
-				end := len(dirs1)
-				for i := start; i <= end; i++ {
-					newOrders = append(newOrders, i)
-				}
-				orders = newOrders
-			}
-			for _, order := range orders {
-				order -= 1 // handle 1 origin
-				if len(dirs1)-1 < order {
-					// avoid runtime error index out of range
-					continue
-				}
-				dirs2 = append(dirs2, dirs1[order])
-			}
-			fmt.Fprintf(os.Stdout, "%s\n", strings.Join(dirs2, "/"))
+			continue
 		}
+		var dirs1 []string = strings.Split(input, "/")
+		var dirs2 []string
+		switch dirs1[0] {
+		case "":
+			dirs1 = dirs1[1:]
+			if orders[0] == 1 {
+				dirs2 = []string{""}
+			}
+		case ".":
+			dirs1 = dirs1[1:]
+			if orders[0] == 1 {
+				dirs2 = []string{"."}
+			}
+		}
+		switch lastOrder := orders[len(orders)-1]; {
+		case lastOrder < 0:
+			start := orders[0]
+			end := len(dirs1) + orders[len(orders)-1]
+			if end < start {
+				return fmt.Errorf("Index last %d (%d) is smaller than index start %d", orders[len(orders)-1], end, start)
+			}
+			for i := start; i <= end; i++ {
+				indexes = append(indexes, i)
+			}
+		case lastOrder == 0:
+			start := orders[0]
+			end := len(dirs1)
+			for i := start; i <= end; i++ {
+				indexes = append(indexes, i)
+			}
+		default:
+			indexes = orders
+		}
+		for _, idx := range indexes {
+			idx -= 1 // handle 1 origin
+			if len(dirs1)-1 < idx {
+				// avoid runtime error index out of range
+				continue
+			}
+			dirs2 = append(dirs2, dirs1[idx])
+		}
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(dirs2, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()
@@ -97,7 +96,7 @@ func run() error {
 				return err
 			}
 			if start < 0 {
-				return errors.New("left..right: left should be possitive number")
+				return errors.New("left..right: left should be positive number")
 			}
 			if end < 0 {
 				orders = append(orders, start)
@@ -107,7 +106,7 @@ func run() error {
 					orders = append(orders, order)
 				}
 			}
-		case regexp.MustCompile(`^\d+$`).MatchString(arg):
+		case regexp.MustCompile(`^\d+$`).MatchString(arg): // positive number
 			order, err := strconv.Atoi(arg)
 			if err != nil {
 				continue
@@ -117,7 +116,7 @@ func run() error {
 			}
 			orders = append(orders, order)
 		default:
-			return errors.New("Invalid arguments")
+			return fmt.Errorf("%s: invalid arguments", arg)
 		}
 	}
 	if err := construct(orders...); err != nil {
