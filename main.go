@@ -12,49 +12,49 @@ import (
 	"strings"
 )
 
-func construct(orders ...int) error {
+func construct(nums ...int) error {
 	var r io.Reader = os.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		var indexes []int
 		input := scanner.Text()
-		switch len(orders) {
+		switch len(nums) {
 		case 0:
 			fmt.Fprintf(os.Stdout, "%s\n", input)
 			continue
 		}
+		var indexes []int
 		var dirs1 []string = strings.Split(input, "/")
 		var dirs2 []string
 		switch dirs1[0] {
 		case "":
 			dirs1 = dirs1[1:]
-			if orders[0] == 1 {
+			if nums[0] == 1 {
 				dirs2 = []string{""}
 			}
 		case ".":
 			dirs1 = dirs1[1:]
-			if orders[0] == 1 {
+			if nums[0] == 1 {
 				dirs2 = []string{"."}
 			}
 		}
-		switch lastOrder := orders[len(orders)-1]; {
-		case lastOrder < 0:
-			start := orders[0]
-			end := len(dirs1) + orders[len(orders)-1]
+		switch last := nums[len(nums)-1]; {
+		case last < 0:
+			start := nums[0]
+			end := len(dirs1) + nums[len(nums)-1]
 			if end < start {
-				return fmt.Errorf("Index last %d (%d) is smaller than index start %d", orders[len(orders)-1], end, start)
+				return fmt.Errorf("Index last %d (%d) is smaller than index start %d", nums[len(nums)-1], end, start)
 			}
 			for i := start; i <= end; i++ {
 				indexes = append(indexes, i)
 			}
-		case lastOrder == 0:
-			start := orders[0]
+		case last == 0:
+			start := nums[0]
 			end := len(dirs1)
 			for i := start; i <= end; i++ {
 				indexes = append(indexes, i)
 			}
 		default:
-			indexes = orders
+			indexes = nums
 		}
 		var leakage bool
 		for _, idx := range indexes {
@@ -63,21 +63,16 @@ func construct(orders ...int) error {
 				leakage = true
 				continue // avoid runtime error index out of range
 			}
-			dirs2 = append(dirs2, dirs1[idx])
-		}
-		// trailing last space etc
-		var outputs []string
-		for _, dir := range dirs2 {
-			if dir == "" {
-				continue
+			if dirs1[idx] == "" {
+				continue // remove a space
 			}
-			outputs = append(outputs, dir)
+			dirs2 = append(dirs2, dirs1[idx])
 		}
 		// do not print if leakage
 		if leakage {
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(outputs, "/"))
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(dirs2, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()
@@ -86,7 +81,7 @@ func construct(orders ...int) error {
 }
 
 func run() error {
-	var orders []int
+	var nums []int
 	flag.Parse()
 	for _, arg := range flag.Args() {
 		switch {
@@ -96,8 +91,8 @@ func run() error {
 			if err != nil {
 				return err
 			}
-			orders = append(orders, start)
-			orders = append(orders, 0)
+			nums = append(nums, start)
+			nums = append(nums, 0)
 		case regexp.MustCompile(`^\d+\.\.-?\d+$`).MatchString(arg):
 			ranges := strings.Split(arg, "..")
 			start, err := strconv.Atoi(ranges[0])
@@ -112,27 +107,27 @@ func run() error {
 				return errors.New("left..right: left should be positive number")
 			}
 			if end < 0 {
-				orders = append(orders, start)
-				orders = append(orders, end)
+				nums = append(nums, start)
+				nums = append(nums, end)
 			} else {
-				for order := start; order <= end; order++ {
-					orders = append(orders, order)
+				for num := start; num <= end; num++ {
+					nums = append(nums, num)
 				}
 			}
 		case regexp.MustCompile(`^\d+$`).MatchString(arg): // positive number
-			order, err := strconv.Atoi(arg)
+			num, err := strconv.Atoi(arg)
 			if err != nil {
 				continue
 			}
-			if order == 0 {
+			if num == 0 {
 				return errors.New("Cannot use 0 as index because of 1 origin")
 			}
-			orders = append(orders, order)
+			nums = append(nums, num)
 		default:
 			return fmt.Errorf("%s: invalid arguments", arg)
 		}
 	}
-	if err := construct(orders...); err != nil {
+	if err := construct(nums...); err != nil {
 		return err
 	}
 	return nil
