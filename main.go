@@ -36,6 +36,19 @@ func construct(orders ...int) error {
 					dirs2 = []string{"."}
 				}
 			}
+			if orders[len(orders)-1] < 0 {
+				// if last order is negative number
+				var newOrders []int
+				start := orders[0]
+				end := len(dirs1) + orders[len(orders)-1]
+				if end < start {
+					return fmt.Errorf("Index last %d (%d) is smaller than index start %d", orders[len(orders)-1], end, start)
+				}
+				for i := start; i <= end; i++ {
+					newOrders = append(newOrders, i)
+				}
+				orders = newOrders
+			}
 			for _, order := range orders {
 				order -= 1 // handle 1 origin
 				if len(dirs1)-1 < order {
@@ -69,8 +82,16 @@ func run() error {
 			if err != nil {
 				return err
 			}
-			for order := start; order <= end; order++ {
-				orders = append(orders, order)
+			if start < 0 {
+				return errors.New("left..right: left should be possitive number")
+			}
+			if end < 0 {
+				orders = append(orders, start)
+				orders = append(orders, end)
+			} else {
+				for order := start; order <= end; order++ {
+					orders = append(orders, order)
+				}
 			}
 		case regexp.MustCompile(`^\d+$`).MatchString(arg):
 			order, err := strconv.Atoi(arg)
