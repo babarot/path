@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -70,7 +69,6 @@ func run() error {
 	var orders []int
 	flag.Parse()
 	for _, arg := range flag.Args() {
-		log.Println(arg)
 		switch {
 		case regexp.MustCompile(`^\d+\.\.-?\d+$`).MatchString(arg):
 			ranges := strings.Split(arg, "..")
