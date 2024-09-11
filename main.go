@@ -56,15 +56,28 @@ func construct(orders ...int) error {
 		default:
 			indexes = orders
 		}
+		var leakage bool
 		for _, idx := range indexes {
 			idx -= 1 // handle 1 origin
 			if len(dirs1)-1 < idx {
-				// avoid runtime error index out of range
-				continue
+				leakage = true
+				continue // avoid runtime error index out of range
 			}
 			dirs2 = append(dirs2, dirs1[idx])
 		}
-		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(dirs2, "/"))
+		// trailing last space etc
+		var outputs []string
+		for _, dir := range dirs2 {
+			if dir == "" {
+				continue
+			}
+			outputs = append(outputs, dir)
+		}
+		// do not print if leakage
+		if leakage {
+			continue
+		}
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(outputs, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()

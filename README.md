@@ -72,4 +72,11 @@ honda
 nissan
 subaru
 toyota
+$ cat dirlist.txt | dirgram 5 | sort | uniq -c
+   1 city
+   1 civic
+   1 corolla
+   1 integra
+   2 skyline
+   1 supra
 ```
