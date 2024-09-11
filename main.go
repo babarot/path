@@ -12,28 +12,19 @@ import (
 	"strings"
 )
 
-type RendererInterface interface {
-	Printf(format string, a ...any)
+type CLI struct {
+	Stdin          io.Reader
+	Stdout, Stderr io.Writer
 }
 
-type Renderer struct{}
-
-func NewRenderer() *Renderer {
-	return &Renderer{}
-}
-
-func (ren *Renderer) Printf(format string, a ...any) {
-	fmt.Printf(format, a...)
-}
-
-func construct(renderer RendererInterface, nums ...int) error {
-	var r io.Reader = os.Stdin
+func (c *CLI) construct(nums ...int) error {
+	var r io.Reader = c.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
 		switch len(nums) {
 		case 0:
-			renderer.Printf("%s\n", input)
+			fmt.Fprintf(c.Stdout, "%s\n", input)
 			continue
 		}
 		var indexes []int
@@ -90,7 +81,7 @@ func construct(renderer RendererInterface, nums ...int) error {
 		if leakage {
 			continue
 		}
-		renderer.Printf("%s\n", strings.Join(dirs2, "/"))
+		fmt.Fprintf(c.Stdout, "%s\n", strings.Join(dirs2, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()
@@ -98,7 +89,7 @@ func construct(renderer RendererInterface, nums ...int) error {
 	return nil
 }
 
-func run(renderer RendererInterface, args []string) error {
+func (c *CLI) run(args []string) error {
 	var nums []int
 	for _, arg := range args {
 		switch {
@@ -120,16 +111,29 @@ func run(renderer RendererInterface, args []string) error {
 			if err != nil {
 				return err
 			}
-			if start < 0 {
+			// if start < 0 {
+			// 	return errors.New("left..right: left should be positive number")
+			// }
+			// if end < 0 {
+			// 	nums = append(nums, start)
+			// 	nums = append(nums, end)
+			// } else {
+			// 	for num := start; num <= end; num++ {
+			// 		nums = append(nums, num)
+			// 	}
+			// }
+			switch {
+			case start < 0:
 				return errors.New("left..right: left should be positive number")
-			}
-			if end < 0 {
+			case end < 0:
 				nums = append(nums, start)
 				nums = append(nums, end)
-			} else {
+			case start < end:
 				for num := start; num <= end; num++ {
 					nums = append(nums, num)
 				}
+			default:
+				return errors.New("left side should be smaller than right side (except for negative number in right side)")
 			}
 		case regexp.MustCompile(`^\d+$`).MatchString(arg): // positive number
 			num, err := strconv.Atoi(arg)
@@ -144,17 +148,21 @@ func run(renderer RendererInterface, args []string) error {
 			return fmt.Errorf("%s: invalid argument type", arg)
 		}
 	}
-	if err := construct(renderer, nums...); err != nil {
+	if err := c.construct(nums...); err != nil {
 		return err
 	}
 	return nil
 }
 
 func main() {
-	renderer := NewRenderer()
+	cli := &CLI{
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
 	flag.Parse()
-	if err := run(renderer, flag.Args()); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if err := cli.run(flag.Args()); err != nil {
+		fmt.Fprintln(cli.Stderr, err)
 		os.Exit(1)
 	}
 }
