@@ -111,17 +111,6 @@ func (c *CLI) run(args []string) error {
 			if err != nil {
 				return err
 			}
-			// if start < 0 {
-			// 	return errors.New("left..right: left should be positive number")
-			// }
-			// if end < 0 {
-			// 	nums = append(nums, start)
-			// 	nums = append(nums, end)
-			// } else {
-			// 	for num := start; num <= end; num++ {
-			// 		nums = append(nums, num)
-			// 	}
-			// }
 			switch {
 			case start < 0:
 				return errors.New("left..right: left should be positive number")
