@@ -35,14 +35,22 @@ func construct(orders ...int) error {
 					dirs2 = []string{"."}
 				}
 			}
-			if orders[len(orders)-1] < 0 {
-				// if last order is negative number
+			switch lastOrder := orders[len(orders)-1]; {
+			case lastOrder < 0:
 				var newOrders []int
 				start := orders[0]
 				end := len(dirs1) + orders[len(orders)-1]
 				if end < start {
 					return fmt.Errorf("Index last %d (%d) is smaller than index start %d", orders[len(orders)-1], end, start)
 				}
+				for i := start; i <= end; i++ {
+					newOrders = append(newOrders, i)
+				}
+				orders = newOrders
+			case lastOrder == 0:
+				var newOrders []int
+				start := orders[0]
+				end := len(dirs1)
 				for i := start; i <= end; i++ {
 					newOrders = append(newOrders, i)
 				}
@@ -70,6 +78,14 @@ func run() error {
 	flag.Parse()
 	for _, arg := range flag.Args() {
 		switch {
+		case regexp.MustCompile(`^\d+\.\.$`).MatchString(arg):
+			ranges := strings.Split(arg, "..")
+			start, err := strconv.Atoi(ranges[0])
+			if err != nil {
+				return err
+			}
+			orders = append(orders, start)
+			orders = append(orders, 0)
 		case regexp.MustCompile(`^\d+\.\.-?\d+$`).MatchString(arg):
 			ranges := strings.Split(arg, "..")
 			start, err := strconv.Atoi(ranges[0])
@@ -101,7 +117,7 @@ func run() error {
 			}
 			orders = append(orders, order)
 		default:
-			return errors.New("error")
+			return errors.New("Invalid arguments")
 		}
 	}
 	if err := construct(orders...); err != nil {
