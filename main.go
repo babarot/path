@@ -12,14 +12,28 @@ import (
 	"strings"
 )
 
-func construct(nums ...int) error {
+type RendererInterface interface {
+	Printf(format string, a ...any)
+}
+
+type Renderer struct{}
+
+func NewRenderer() *Renderer {
+	return &Renderer{}
+}
+
+func (ren *Renderer) Printf(format string, a ...any) {
+	fmt.Printf(format, a...)
+}
+
+func construct(renderer RendererInterface, nums ...int) error {
 	var r io.Reader = os.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
 		switch len(nums) {
 		case 0:
-			fmt.Fprintf(os.Stdout, "%s\n", input)
+			renderer.Printf("%s\n", input)
 			continue
 		}
 		var indexes []int
@@ -76,7 +90,7 @@ func construct(nums ...int) error {
 		if leakage {
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(dirs2, "/"))
+		renderer.Printf("%s\n", strings.Join(dirs2, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()
@@ -84,10 +98,9 @@ func construct(nums ...int) error {
 	return nil
 }
 
-func run() error {
+func run(renderer RendererInterface, args []string) error {
 	var nums []int
-	flag.Parse()
-	for _, arg := range flag.Args() {
+	for _, arg := range args {
 		switch {
 		case regexp.MustCompile(`^\d+\.\.$`).MatchString(arg):
 			ranges := strings.Split(arg, "..")
@@ -131,14 +144,16 @@ func run() error {
 			return fmt.Errorf("%s: invalid argument type", arg)
 		}
 	}
-	if err := construct(nums...); err != nil {
+	if err := construct(renderer, nums...); err != nil {
 		return err
 	}
 	return nil
 }
 
 func main() {
-	if err := run(); err != nil {
+	renderer := NewRenderer()
+	flag.Parse()
+	if err := run(renderer, flag.Args()); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
