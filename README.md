@@ -28,7 +28,6 @@ a/a/a
 ```
 
 ```console
-$ echo /path/to/a/b/c/d/e | dirgram 3 6 5 4
 $ dirname /path/to/a/b/c/d/e
 /path/to/a/b/c/d
 $ echo /path/to/a/b/c/d/e | dirgram 1..-1
@@ -49,6 +48,8 @@ $ echo /path/to/a/b/c/d/e | dirgram 3..
 a/b/c/d/e
 $ echo /path/to/a/b/c/d/e | dirgram 3..-3
 a/b
+$ echo /path/to/a/b/c/d/e | dirgram 3..-3 | dirgram 1
+a
 $ echo /path/to/a/b/c/d/e | dirgram 3..-4
 a
 $ echo /path/to/a/b/c/d/e | dirgram 3
@@ -56,10 +57,15 @@ a
 ```
 
 ```console
+$ echo ./local/file/1/2/3 | dirgram 1..3
+./local/file/1
+```
+
+```console
 $ cat dirlist.txt
 /home/babarot/car/toyota/corolla/levin
 /home/babarot/car/toyota/
-/home/babarot/car/toyota/supra/80
+/home/babarot/car/toyota/supra/a80
 /home/babarot/car/nissan
 /home/babarot/car/nissan/skyline/bnr32
 /home/babarot/car/nissan/skyline/er34

@@ -26,12 +26,16 @@ func construct(nums ...int) error {
 		var dirs1 []string = strings.Split(input, "/")
 		var dirs2 []string
 		switch dirs1[0] {
-		case "":
+		case "": // a case of `/root/1/2/3`
+			// remove from dirs1 to treat it without blank in operating
+			// but join to output dirs
 			dirs1 = dirs1[1:]
 			if nums[0] == 1 {
 				dirs2 = []string{""}
 			}
-		case ".":
+		case ".": // a case of `./local/1/2/3`
+			// remove from dirs1 to treat it without blank in operating
+			// but join to output dirs
 			dirs1 = dirs1[1:]
 			if nums[0] == 1 {
 				dirs2 = []string{"."}
@@ -42,7 +46,7 @@ func construct(nums ...int) error {
 			start := nums[0]
 			end := len(dirs1) + nums[len(nums)-1]
 			if end < start {
-				return fmt.Errorf("Index last %d (%d) is smaller than index start %d", nums[len(nums)-1], end, start)
+				return fmt.Errorf("Last index %d (%d) is smaller than the beginning of index %d", nums[len(nums)-1], end, start)
 			}
 			for i := start; i <= end; i++ {
 				indexes = append(indexes, i)
@@ -58,7 +62,7 @@ func construct(nums ...int) error {
 		}
 		var leakage bool
 		for _, idx := range indexes {
-			idx -= 1 // handle 1 origin
+			idx -= 1 // handle 1-origin
 			if len(dirs1)-1 < idx {
 				leakage = true
 				continue // avoid runtime error index out of range
@@ -120,11 +124,11 @@ func run() error {
 				continue
 			}
 			if num == 0 {
-				return errors.New("Cannot use 0 as index because of 1 origin")
+				return errors.New("cannot use 0 as a index because of 1-origin")
 			}
 			nums = append(nums, num)
 		default:
-			return fmt.Errorf("%s: invalid arguments", arg)
+			return fmt.Errorf("%s: invalid argument type", arg)
 		}
 	}
 	if err := construct(nums...); err != nil {
