@@ -48,13 +48,22 @@ func (c *CLI) construct(nums ...int) error {
 		}
 		switch last := nums[len(nums)-1]; {
 		case last < 0:
-			start := nums[0]
-			end := len(dirs1) + nums[len(nums)-1]
-			if end < start {
-				return fmt.Errorf("Last index %d (%d) is smaller than the beginning of index %d", nums[len(nums)-1], end, start)
-			}
-			for i := start; i <= end; i++ {
-				indexes = append(indexes, i)
+			if len(nums) == 1 {
+				index := len(dirs1) + last
+				if index < 0 {
+					return fmt.Errorf("%d: index out of range (range should be -%d..%d)\n%v",
+						last, len(dirs1), len(dirs1), dirs1)
+				}
+				dirs2 = append(dirs2, dirs1[index])
+			} else {
+				start := nums[0]
+				end := len(dirs1) + nums[len(nums)-1]
+				if end < start {
+					return fmt.Errorf("Last index %d (%d) is smaller than the beginning of index %d", nums[len(nums)-1], end, start)
+				}
+				for i := start; i <= end; i++ {
+					indexes = append(indexes, i)
+				}
 			}
 		case last == 0:
 			start := nums[0]
@@ -124,7 +133,7 @@ func (c *CLI) run(args []string) error {
 			default:
 				return errors.New("left side should be smaller than right side (except for negative number in right side)")
 			}
-		case regexp.MustCompile(`^\d+$`).MatchString(arg): // positive number
+		case regexp.MustCompile(`^-?\d+$`).MatchString(arg): // single number, nevative or positive
 			num, err := strconv.Atoi(arg)
 			if err != nil {
 				continue
