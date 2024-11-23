@@ -8,38 +8,42 @@ import (
 
 func Test_run_(t *testing.T) {
 	const (
-		noErr  = false
+		ok     = false
 		hasErr = true
 	)
 	cases := map[string]struct {
-		input   string
-		args    []string
-		want    string
-		wantErr bool
+		input  string
+		args   []string
+		want   string
+		hasErr bool
 	}{
 		// absolute path
-		"ok/root":              {"/a/b/c/d/e", []string{"1", "3"}, "/a/c", noErr},
-		"ok/not-root":          {"/a/b/c/d/e", []string{"2", "3"}, "b/c", noErr},
-		"ok/range":             {"/a/b/c/d/e", []string{"1..3"}, "/a/b/c", noErr},
-		"ok/range-not-root":    {"/a/b/c/d/e", []string{"2..4"}, "b/c/d", noErr},
-		"ok/range-minus-1":     {"/a/b/c/d/e", []string{"2..-1"}, "b/c/d", noErr},
-		"ok/range-minus-2":     {"/a/b/c/d/e", []string{"2..-2"}, "b/c", noErr},
-		"ok/range-minus-3":     {"/a/b/c/d/e", []string{"1..-4"}, "/a", noErr},
-		"err/range-overflow-1": {"/a/b/c/d/e", []string{"1..-5"}, "", hasErr},
-		"err/range-overflow-2": {"/a/b/c/d/e", []string{"3..2"}, "", hasErr},
-		"err/range-overflow-3": {"/a/b/c/d/e", []string{"3..3"}, "", hasErr},
-		"ok/replace":           {"/a/b/c/d/e", []string{"2", "1", "3"}, "b/a/c", noErr},
-		"ok/repeat":            {"/a/b/c/d/e", []string{"2", "2", "2"}, "b/b/b", noErr},
-		"ok/no-arg":            {"/a/b/c/d/e", []string{}, "/a/b/c/d/e", noErr},
-		"ok/dirname":           {"/a/b/c/d/e", []string{"1..-1"}, "/a/b/c/d", noErr},
-		"ok/range-left-only-1": {"/a/b/c/d/e", []string{"1.."}, "/a/b/c/d/e", noErr},
-		"ok/range-left-only-2": {"/a/b/c/d/e", []string{"3.."}, "c/d/e", noErr},
-		"ok/single":            {"/a/b/c/d/e", []string{"3"}, "c", noErr},
+		"abs/root":              {"/a/b/c/d/e", []string{"1", "3"}, "/a/c", ok},
+		"abs/not-root":          {"/a/b/c/d/e", []string{"2", "3"}, "b/c", ok},
+		"abs/range":             {"/a/b/c/d/e", []string{"1..3"}, "/a/b/c", ok},
+		"abs/range-not-root":    {"/a/b/c/d/e", []string{"2..4"}, "b/c/d", ok},
+		"abs/range-one":         {"/a/b/c/d/e", []string{"3..3"}, "c", ok},
+		"abs/range-two":         {"/a/b/c/d/e", []string{"3..4"}, "c/d", ok},
+		"abs/range-minus-1":     {"/a/b/c/d/e", []string{"2..-1"}, "b/c/d/e", ok},
+		"abs/range-minus-2":     {"/a/b/c/d/e", []string{"2..-2"}, "b/c/d", ok},
+		"abs/range-minus-3":     {"/a/b/c/d/e", []string{"1..-4"}, "/a/b", ok},
+		"abs/range-minus-4":     {"/a/b/c/d/e", []string{"1..-5"}, "/a", ok},
+		"abs/range-overflow-1":  {"/a/b/c/d/e", []string{"1..-6"}, "", hasErr},
+		"abs/range-overflow-2":  {"/a/b/c/d/e", []string{"3..2"}, "", hasErr},
+		"abs/replace":           {"/a/b/c/d/e", []string{"2", "1", "3"}, "b/a/c", ok},
+		"abs/replace-with-nega": {"/a/b/c/d/e", []string{"2", "1", "-1"}, "b/a/e", ok},
+		"abs/repeat":            {"/a/b/c/d/e", []string{"2", "2", "2"}, "b/b/b", ok},
+		"abs/no-arg":            {"/a/b/c/d/e", []string{}, "", hasErr},
+		"abs/full":              {"/a/b/c/d/e", []string{"1..-1"}, "/a/b/c/d/e", ok},
+		"abs/range-left-only-1": {"/a/b/c/d/e", []string{"1.."}, "/a/b/c/d/e", ok},
+		"abs/range-left-only-2": {"/a/b/c/d/e", []string{"3.."}, "c/d/e", ok},
+		"abs/single-positive":   {"/a/b/c/d/e", []string{"3"}, "c", ok},
+		"abs/single-negative":   {"/a/b/c/d/e", []string{"-1"}, "e", ok},
 		// relative path
-		"ok/rel/simple":  {"x/y/z", []string{"1", "3"}, "x/z", noErr},
-		"ok/rel/range":   {"x/y/z", []string{"2", "3"}, "y/z", noErr},
-		"ok/rel/dot":     {"./x/y/z", []string{"1", "3"}, "./x/z", noErr},
-		"ok/rel/not-dot": {"./x/y/z", []string{"2", "3"}, "y/z", noErr},
+		"rel/simple":  {"x/y/z", []string{"1", "3"}, "x/z", ok},
+		"rel/range":   {"x/y/z", []string{"2", "3"}, "y/z", ok},
+		"rel/dot":     {"./x/y/z", []string{"1", "3"}, "./x/z", ok},
+		"rel/not-dot": {"./x/y/z", []string{"2", "3"}, "y/z", ok},
 	}
 
 	for name, tt := range cases {
@@ -55,9 +59,9 @@ func Test_run_(t *testing.T) {
 			err := cli.run(tt.args)
 
 			switch {
-			case tt.wantErr && err == nil:
+			case tt.hasErr && err == nil:
 				t.Fatal("expected error did not occur")
-			case !tt.wantErr && err != nil:
+			case !tt.hasErr && err != nil:
 				t.Fatal("unexpected error:", err)
 			}
 

@@ -16,8 +16,10 @@ $ echo /path/to/a/b/c/d/e | dirgram 3 4 5 6
 a/b/c/d
 $ echo /path/to/a/b/c/d/e | dirgram 3..6
 a/b/c/d
+$ echo /path/to/a/b/c/d/e | dirgram -- -1
+e
 $ echo /path/to/a/b/c/d/e | dirgram 3..-1
-a/b/c/d
+a/b/c/d/e
 ```
 
 ```console
@@ -30,13 +32,8 @@ a/a/a
 ```console
 $ dirname /path/to/a/b/c/d/e
 /path/to/a/b/c/d
-$ echo /path/to/a/b/c/d/e | dirgram 1..-1
+$ echo /path/to/a/b/c/d/e | dirgram 1..-2
 /path/to/a/b/c/d
-```
-
-```console
-$ echo /path/to/a/b/c/d/e | dirgram 3
-a
 ```
 
 ```console
@@ -47,10 +44,10 @@ $ echo /path/to/a/b/c/d/e | dirgram 1..
 $ echo /path/to/a/b/c/d/e | dirgram 3..
 a/b/c/d/e
 $ echo /path/to/a/b/c/d/e | dirgram 3..-3
-a/b
+a/b/c
 $ echo /path/to/a/b/c/d/e | dirgram 3..-3 | dirgram 1
 a
-$ echo /path/to/a/b/c/d/e | dirgram 3..-4
+$ echo /path/to/a/b/c/d/e | dirgram 3..-5
 a
 $ echo /path/to/a/b/c/d/e | dirgram 3
 a
@@ -78,7 +75,7 @@ honda
 nissan
 subaru
 toyota
-$ cat dirlist.txt | dirgram 5 | sort | uniq -c
+$ cat dirlist.txt | dirgram 5 | grep -v '^$' | sort | uniq -c
    1 city
    1 civic
    1 corolla
