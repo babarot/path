@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -15,16 +16,27 @@ import (
 type CLI struct {
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
+
+	// options
+	sequential        bool
+	countDirHierarchy bool
 }
 
-func (c *CLI) construct(sequential bool, nums ...int) error {
-	if len(nums) == 0 {
+func (c *CLI) construct(nums ...int) error {
+	if len(nums) == 0 && !c.countDirHierarchy {
 		return fmt.Errorf("invalid usage")
 	}
 	var r io.Reader = c.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
+		if c.countDirHierarchy {
+			dirs := slices.DeleteFunc(strings.Split(input, "/"), func(s string) bool {
+				return s == "" || s == "."
+			})
+			fmt.Println(len(dirs))
+			continue
+		}
 		var indexes []int
 		var dirs1 []string = strings.Split(input, "/")
 		var dirs2 []string
@@ -44,7 +56,7 @@ func (c *CLI) construct(sequential bool, nums ...int) error {
 				dirs2 = []string{"."}
 			}
 		}
-		if sequential {
+		if c.sequential {
 			start := nums[0]
 			end := nums[1]
 			switch {
@@ -99,7 +111,6 @@ func (c *CLI) construct(sequential bool, nums ...int) error {
 }
 
 func (c *CLI) run(args []string) error {
-	var sequential bool
 	var nums []int
 	for _, arg := range args {
 		switch {
@@ -117,7 +128,7 @@ func (c *CLI) run(args []string) error {
 				}
 			}
 			nums = []int{start, end}
-			sequential = true
+			c.sequential = true
 		case regexp.MustCompile(`^-?\d+$`).MatchString(arg): // single number
 			num, err := strconv.Atoi(arg)
 			if err != nil {
@@ -131,7 +142,7 @@ func (c *CLI) run(args []string) error {
 			return fmt.Errorf("%s: invalid argument type", arg)
 		}
 	}
-	if err := c.construct(sequential, nums...); err != nil {
+	if err := c.construct(nums...); err != nil {
 		return err
 	}
 	return nil
@@ -139,10 +150,13 @@ func (c *CLI) run(args []string) error {
 
 func main() {
 	cli := &CLI{
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdin:             os.Stdin,
+		Stdout:            os.Stdout,
+		Stderr:            os.Stderr,
+		sequential:        false,
+		countDirHierarchy: false,
 	}
+	flag.BoolVar(&cli.countDirHierarchy, "c", false, "show a count of directory hierarchy")
 	flag.Parse()
 	if err := cli.run(flag.Args()); err != nil {
 		fmt.Fprintln(cli.Stderr, err)
