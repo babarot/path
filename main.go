@@ -18,8 +18,8 @@ import (
 )
 
 type CLI struct {
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
+	stdin          io.Reader
+	stdout, stderr io.Writer
 
 	// options
 	isRange bool
@@ -29,19 +29,19 @@ type CLI struct {
 }
 
 func main() {
-	log.SetOutput(logOutput())
 	cli := &CLI{
-		Stdin:             os.Stdin,
-		Stdout:            os.Stdout,
-		Stderr:            os.Stderr,
+		stdin:             os.Stdin,
+		stdout:            os.Stdout,
+		stderr:            os.Stderr,
 		isRange:           false,
 		countDirHierarchy: false,
 	}
 	flag.BoolVar(&cli.countDirHierarchy, "c", false, "show a count of directory hierarchy")
 	flag.BoolVar(&cli.version, "v", false, "show a version")
 	flag.Parse()
+	log.SetOutput(cli.logOutput())
 	if err := cli.main(flag.Args()); err != nil {
-		fmt.Fprintln(cli.Stderr, err)
+		fmt.Fprintln(cli.stderr, err)
 		os.Exit(1)
 	}
 }
@@ -82,7 +82,7 @@ func (c *CLI) main(args []string) error {
 			return fmt.Errorf("%s: invalid arguments", arg)
 		}
 	}
-	var r io.Reader = c.Stdin
+	var r io.Reader = c.stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
@@ -190,11 +190,11 @@ func (c *CLI) build(path string, nums ...int) error {
 		}
 		dirs2 = append(dirs2, dirs1[num])
 	}
-	fmt.Fprintf(c.Stdout, "%s\n", strings.Join(dirs2, "/"))
+	fmt.Fprintf(c.stdout, "%s\n", strings.Join(dirs2, "/"))
 	return nil
 }
 
-func logOutput() io.Writer {
+func (c *CLI) logOutput() io.Writer {
 	levels := []logutils.LogLevel{"TRACE", "DEBUG", "INFO", "WARN", "ERROR"}
 	minLevel := os.Getenv("LOG_LEVEL")
 	if len(minLevel) == 0 {
@@ -204,7 +204,7 @@ func logOutput() io.Writer {
 	// default log writer is null
 	writer := ioutil.Discard
 	if minLevel != "" {
-		writer = os.Stderr
+		writer = c.stderr
 	}
 
 	filter := &logutils.LevelFilter{

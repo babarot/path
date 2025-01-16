@@ -55,9 +55,9 @@ func Test_run_(t *testing.T) {
 			t.Parallel()
 			var got bytes.Buffer
 			cli := &CLI{
-				Stdout: &got,
-				Stderr: &got,
-				Stdin:  strings.NewReader(tt.input),
+				stdout: &got,
+				stderr: &got,
+				stdin:  strings.NewReader(tt.input),
 			}
 			err := cli.main(tt.args)
 
