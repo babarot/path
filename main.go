@@ -17,6 +17,13 @@ import (
 	"github.com/hashicorp/logutils"
 )
 
+const appName = "path"
+
+var (
+	version  = "develop"
+	revision = "HEAD"
+)
+
 type CLI struct {
 	stdin          io.Reader
 	stdout, stderr io.Writer
