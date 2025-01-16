@@ -93,6 +93,13 @@ func (c *CLI) main(args []string) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
+		if c.countDirHierarchy {
+			dirs := slices.DeleteFunc(strings.Split(input, "/"), func(s string) bool {
+				return s == "" || s == "."
+			})
+			fmt.Println(len(dirs))
+			continue
+		}
 		if err := c.build(input, nums...); err != nil {
 			return err
 		}
@@ -105,15 +112,8 @@ func (c *CLI) main(args []string) error {
 
 func (c *CLI) build(path string, nums ...int) error {
 	log.Printf("[DEBUG] build: args: %#v\n", nums)
-	if len(nums) == 0 && !c.countDirHierarchy {
+	if len(nums) == 0 {
 		return fmt.Errorf("too few arguments")
-	}
-	if c.countDirHierarchy {
-		dirs := slices.DeleteFunc(strings.Split(path, "/"), func(s string) bool {
-			return s == "" || s == "."
-		})
-		fmt.Println(len(dirs))
-		return nil
 	}
 	var dirs1 []string = strings.Split(path, "/")
 	var dirs2 []string
@@ -176,12 +176,6 @@ func (c *CLI) build(path string, nums ...int) error {
 				indexes = append(indexes, num)
 			}
 		}
-		pairs, err := zipmap(nums, indexes)
-		if err == nil {
-			for _, pair := range pairs {
-				log.Printf("[TRACE] converted %d -> %d\n", pair.a, pair.b)
-			}
-		}
 		return indexes, nil
 	}
 	nums, err := convertToPositives()
@@ -221,22 +215,4 @@ func (c *CLI) logOutput() io.Writer {
 	}
 
 	return filter
-}
-
-type intTuple struct {
-	a, b int
-}
-
-func zipmap(a, b []int) ([]intTuple, error) {
-	if len(a) != len(b) {
-		return nil, fmt.Errorf("zipmap: arguments must be of same length")
-	}
-
-	r := make([]intTuple, len(a), len(a))
-
-	for i, e := range a {
-		r[i] = intTuple{e, b[i]}
-	}
-
-	return r, nil
 }
