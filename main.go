@@ -25,6 +25,7 @@ type CLI struct {
 	isRange bool
 	// flags
 	countDirHierarchy bool
+	version           bool
 }
 
 func main() {
@@ -37,6 +38,7 @@ func main() {
 		countDirHierarchy: false,
 	}
 	flag.BoolVar(&cli.countDirHierarchy, "c", false, "show a count of directory hierarchy")
+	flag.BoolVar(&cli.version, "v", false, "show a version")
 	flag.Parse()
 	if err := cli.main(flag.Args()); err != nil {
 		fmt.Fprintln(cli.Stderr, err)
@@ -45,6 +47,10 @@ func main() {
 }
 
 func (c *CLI) main(args []string) error {
+	if c.version {
+		fmt.Fprintf(os.Stdout, "%s %s (%s)\n", appName, version, revision)
+		return nil
+	}
 	var nums []int
 	for _, arg := range args {
 		switch {
