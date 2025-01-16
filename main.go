@@ -17,9 +17,16 @@ import (
 	"github.com/hashicorp/logutils"
 )
 
+const appName = "path"
+
+var (
+	version  = "develop"
+	revision = "HEAD"
+)
+
 type CLI struct {
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
+	stdin          io.Reader
+	stdout, stderr io.Writer
 
 	// options
 	isRange bool
@@ -29,19 +36,19 @@ type CLI struct {
 }
 
 func main() {
-	log.SetOutput(logOutput())
 	cli := &CLI{
-		Stdin:             os.Stdin,
-		Stdout:            os.Stdout,
-		Stderr:            os.Stderr,
+		stdin:             os.Stdin,
+		stdout:            os.Stdout,
+		stderr:            os.Stderr,
 		isRange:           false,
 		countDirHierarchy: false,
 	}
 	flag.BoolVar(&cli.countDirHierarchy, "c", false, "show a count of directory hierarchy")
 	flag.BoolVar(&cli.version, "v", false, "show a version")
 	flag.Parse()
+	log.SetOutput(cli.logOutput())
 	if err := cli.main(flag.Args()); err != nil {
-		fmt.Fprintln(cli.Stderr, err)
+		fmt.Fprintln(cli.stderr, err)
 		os.Exit(1)
 	}
 }
@@ -82,10 +89,17 @@ func (c *CLI) main(args []string) error {
 			return fmt.Errorf("%s: invalid arguments", arg)
 		}
 	}
-	var r io.Reader = c.Stdin
+	var r io.Reader = c.stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
+		if c.countDirHierarchy {
+			dirs := slices.DeleteFunc(strings.Split(input, "/"), func(s string) bool {
+				return s == "" || s == "."
+			})
+			fmt.Println(len(dirs))
+			continue
+		}
 		if err := c.build(input, nums...); err != nil {
 			return err
 		}
@@ -98,15 +112,8 @@ func (c *CLI) main(args []string) error {
 
 func (c *CLI) build(path string, nums ...int) error {
 	log.Printf("[DEBUG] build: args: %#v\n", nums)
-	if len(nums) == 0 && !c.countDirHierarchy {
+	if len(nums) == 0 {
 		return fmt.Errorf("too few arguments")
-	}
-	if c.countDirHierarchy {
-		dirs := slices.DeleteFunc(strings.Split(path, "/"), func(s string) bool {
-			return s == "" || s == "."
-		})
-		fmt.Println(len(dirs))
-		return nil
 	}
 	var dirs1 []string = strings.Split(path, "/")
 	var dirs2 []string
@@ -169,12 +176,6 @@ func (c *CLI) build(path string, nums ...int) error {
 				indexes = append(indexes, num)
 			}
 		}
-		pairs, err := zipmap(nums, indexes)
-		if err == nil {
-			for _, pair := range pairs {
-				log.Printf("[TRACE] converted %d -> %d\n", pair.a, pair.b)
-			}
-		}
 		return indexes, nil
 	}
 	nums, err := convertToPositives()
@@ -190,11 +191,11 @@ func (c *CLI) build(path string, nums ...int) error {
 		}
 		dirs2 = append(dirs2, dirs1[num])
 	}
-	fmt.Fprintf(c.Stdout, "%s\n", strings.Join(dirs2, "/"))
+	fmt.Fprintf(c.stdout, "%s\n", strings.Join(dirs2, "/"))
 	return nil
 }
 
-func logOutput() io.Writer {
+func (c *CLI) logOutput() io.Writer {
 	levels := []logutils.LogLevel{"TRACE", "DEBUG", "INFO", "WARN", "ERROR"}
 	minLevel := os.Getenv("LOG_LEVEL")
 	if len(minLevel) == 0 {
@@ -204,7 +205,7 @@ func logOutput() io.Writer {
 	// default log writer is null
 	writer := ioutil.Discard
 	if minLevel != "" {
-		writer = os.Stderr
+		writer = c.stderr
 	}
 
 	filter := &logutils.LevelFilter{
@@ -214,22 +215,4 @@ func logOutput() io.Writer {
 	}
 
 	return filter
-}
-
-type intTuple struct {
-	a, b int
-}
-
-func zipmap(a, b []int) ([]intTuple, error) {
-	if len(a) != len(b) {
-		return nil, fmt.Errorf("zipmap: arguments must be of same length")
-	}
-
-	r := make([]intTuple, len(a), len(a))
-
-	for i, e := range a {
-		r[i] = intTuple{e, b[i]}
-	}
-
-	return r, nil
 }

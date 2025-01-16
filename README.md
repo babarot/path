@@ -88,3 +88,7 @@ $ cat paths.txt | path 5 | sort | uniq -c
    2 skyline
    1 supra
 ```
+
+## LICENSE
+
+MIT
