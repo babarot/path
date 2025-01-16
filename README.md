@@ -40,7 +40,6 @@ a
 ```
 
 ```console
->>>>>>> 9d24d55 (Rename app, dirgram to path)
 $ echo /path/to/a/b/c/d/e
 /path/to/a/b/c/d/e
 $ echo /path/to/a/b/c/d/e | path 1..
