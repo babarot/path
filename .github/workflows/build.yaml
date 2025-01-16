@@ -1,8 +1,9 @@
 name: Go
 on:
-  push:
-    branches:
-    - main
+  # checking build on PR is just enough
+  # push:
+  #   branches:
+  #   - main
   pull_request:
   workflow_dispatch:
 

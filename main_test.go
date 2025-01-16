@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"io/ioutil"
+	"log"
 	"strings"
 	"testing"
 )
 
 func Test_run_(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
 	const (
 		ok     = false
 		hasErr = true
@@ -56,7 +59,7 @@ func Test_run_(t *testing.T) {
 				Stderr: &got,
 				Stdin:  strings.NewReader(tt.input),
 			}
-			err := cli.run(tt.args)
+			err := cli.main(tt.args)
 
 			switch {
 			case tt.hasErr && err == nil:

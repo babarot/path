@@ -1,12 +1,14 @@
 path
 ====
 
+[![Go](https://github.com/babarot/path/actions/workflows/build.yaml/badge.svg)](https://github.com/babarot/path/actions/workflows/build.yaml)
+
 `path` is a CLI command to operate a path such as changing the order of a path with any index.
 
 ## Usage
 
-```
-input-of-directory-path | path args...
+```console
+$ echo /path/to/... | path [nums... | -c]
 ```
 
 ## Examples
