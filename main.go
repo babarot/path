@@ -76,103 +76,103 @@ func (c *CLI) main(args []string) error {
 			return fmt.Errorf("%s: invalid arguments", arg)
 		}
 	}
-	if err := c.build(nums...); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *CLI) build(nums ...int) error {
-	log.Printf("[DEBUG] build: args: %#v\n", nums)
-	if len(nums) == 0 && !c.countDirHierarchy {
-		return fmt.Errorf("too few arguments")
-	}
 	var r io.Reader = c.Stdin
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		input := scanner.Text()
-		if c.countDirHierarchy {
-			dirs := slices.DeleteFunc(strings.Split(input, "/"), func(s string) bool {
-				return s == "" || s == "."
-			})
-			fmt.Println(len(dirs))
-			continue
+		if err := c.build(input, nums...); err != nil {
+			return err
 		}
-		var indexes []int
-		var dirs1 []string = strings.Split(input, "/")
-		var dirs2 []string
-		switch dirs1[0] {
-		case "": // a case of `/root/1/2/3`
-			// remove from dirs1 to treat it without blank in operating
-			// but join to output dirs
-			dirs1 = dirs1[1:]
-			if nums[0] == 1 {
-				dirs2 = []string{""}
-			}
-		case ".": // a case of `./local/1/2/3`
-			// remove from dirs1 to treat it without blank in operating
-			// but join to output dirs
-			dirs1 = dirs1[1:]
-			if nums[0] == 1 {
-				dirs2 = []string{"."}
-			}
-		}
-		if c.isRange {
-			start := nums[0]
-			end := nums[1]
-			switch {
-			case 0 < end && end < start:
-				return fmt.Errorf(
-					"On positive number the right side (%d) should be smaller than the left side (%d)",
-					start, end)
-			case end < 0:
-				end = len(dirs1) + 1 + end
-				if end < start {
-					return fmt.Errorf("index out of range (range should be -%d..%d)",
-						len(dirs1), len(dirs1))
-				}
-			case end == 0:
-				end = len(dirs1)
-			case end > len(dirs1):
-				log.Printf("[ERROR] LEAKED! %d is bigger than length of given path (%d)", end, len(dirs1))
-				continue
-			}
-			for i := start; i <= end; i++ {
-				indexes = append(indexes, i)
-			}
-		} else {
-			for _, i := range nums {
-				switch {
-				case i < 0:
-					j := i + len(dirs1) + 1
-					log.Printf("[DEBUG] arg %d is negative number, so calculated from backward: %d", i, j)
-					if j < 0 {
-						log.Printf("[ERROR] %d: LEAKED! calculated result from backward is still negative, index out of range", j)
-						continue
-					}
-					indexes = append(indexes, j)
-				case i > len(dirs1):
-					log.Printf("[ERROR] LEAKED! %d is bigger than length of given path (%d)", i, len(dirs1))
-					continue
-				default:
-					indexes = append(indexes, i)
-				}
-			}
-		}
-		log.Printf("[DEBUG] indexes: %#v", indexes)
-		for _, idx := range indexes {
-			idx -= 1 // handle 1-origin
-			if dirs1[idx] == "" {
-				log.Printf("[DEBUG] removing a space from paths: %#v", dirs1)
-				continue // remove a space
-			}
-			dirs2 = append(dirs2, dirs1[idx])
-		}
-		fmt.Fprintf(c.Stdout, "%s\n", strings.Join(dirs2, "/"))
 	}
 	if scanner.Err() != nil {
 		return scanner.Err()
 	}
+	return nil
+}
+
+func (c *CLI) build(path string, nums ...int) error {
+	log.Printf("[DEBUG] build: args: %#v\n", nums)
+	if len(nums) == 0 && !c.countDirHierarchy {
+		return fmt.Errorf("too few arguments")
+	}
+	if c.countDirHierarchy {
+		dirs := slices.DeleteFunc(strings.Split(path, "/"), func(s string) bool {
+			return s == "" || s == "."
+		})
+		fmt.Println(len(dirs))
+		return nil
+	}
+	var indexes []int
+	var dirs1 []string = strings.Split(path, "/")
+	var dirs2 []string
+	switch dirs1[0] {
+	case "": // a case of `/root/1/2/3`
+		// remove from dirs1 to treat it without blank in operating
+		// but join to output dirs
+		dirs1 = dirs1[1:]
+		if nums[0] == 1 {
+			dirs2 = []string{""}
+		}
+	case ".": // a case of `./local/1/2/3`
+		// remove from dirs1 to treat it without blank in operating
+		// but join to output dirs
+		dirs1 = dirs1[1:]
+		if nums[0] == 1 {
+			dirs2 = []string{"."}
+		}
+	}
+	if c.isRange {
+		start := nums[0]
+		end := nums[1]
+		switch {
+		case 0 < end && end < start:
+			return fmt.Errorf(
+				"right side (%d) in case of positive number should be smaller than left side (%d)",
+				start, end)
+		case end < 0:
+			end = len(dirs1) + 1 + end
+			if end < start {
+				return fmt.Errorf("index out of range (range should be -%d..%d)",
+					len(dirs1), len(dirs1))
+			}
+		case end == 0:
+			end = len(dirs1)
+		case end > len(dirs1):
+			log.Printf("[ERROR] LEAKED! %d is bigger than length of given path (%d)", end, len(dirs1))
+			return nil
+		}
+		for i := start; i <= end; i++ {
+			indexes = append(indexes, i)
+		}
+	} else {
+		for _, i := range nums {
+			switch {
+			case i < 0:
+				j := i + len(dirs1) + 1
+				log.Printf("[DEBUG] arg %d is negative number, so calculated from backward: %d", i, j)
+				if j < 0 {
+					log.Printf("[ERROR] %d: LEAKED! calculated result from backward is still negative, index out of range", j)
+					continue
+				}
+				indexes = append(indexes, j)
+			case i > len(dirs1):
+				log.Printf("[ERROR] LEAKED! %d is bigger than length of given path (%d)", i, len(dirs1))
+				continue
+			default:
+				indexes = append(indexes, i)
+			}
+		}
+	}
+	log.Printf("[DEBUG] indexes: %#v", indexes)
+	for _, idx := range indexes {
+		idx -= 1 // handle 1-origin
+		if dirs1[idx] == "" {
+			log.Printf("[DEBUG] removing a space from paths: %#v", dirs1)
+			continue // remove a space
+		}
+		dirs2 = append(dirs2, dirs1[idx])
+	}
+	fmt.Fprintf(c.Stdout, "%s\n", strings.Join(dirs2, "/"))
 	return nil
 }
 
